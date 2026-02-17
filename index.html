@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSH Real Estate Properties Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #banner {
+            background-color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        #banner h1 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        #banner p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        #map {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .popup-content {
+            width: 250px;
+            white-space: normal;
+            /* Ensure text wraps */
+            max-height: 300px;
+            /* Optional: limit height if text is very long */
+            overflow-y: auto;
+            /* Scroll if content exceeds height */
+        }
+
+        .leaflet-tooltip {
+            white-space: normal !important;
+            /* Override Leaflet's default nowrap */
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .popup-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .popup-content h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .popup-content p {
+            margin: 5px 0;
+            font-size: 12px;
+            line-height: 1.4;
+            /* Improve readability */
+        }
+
+        .popup-content a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .popup-content a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="banner">
+        <h1>GSH Community Portfolio (by Fernando Melo)</h1>
+        <p>Total Properties: <span id="prop-count">0</span> | Total Units: <span id="unit-count">0</span>+</p>
+    </div>
+    <div id="map"></div>
+
+    <script>
+        const properties = [
+            {
+                "title": "Brookmeadow Blue Hills",
+                "url": "https://gshrealestate.com/portfolio/brookmeadow-blue-hills/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2024/05/Exterior2-1024x768.jpg",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Stoughton, MA 03072",
+                "lat": 42.1252079,
+                "lon": -71.1022015,
+                "zip_code": "03072"
+            },
+            {
+                "title": "The Grove",
+                "url": "https://gshrealestate.com/portfolio/the-grove/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2023/04/grove-2-1024x795.jpg",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Grand Rapids, MI 49503",
+                "lat": 42.9632425,
+                "lon": -85.6678639,
+                "zip_code": "49503"
+            },
+            {
+                "title": "Esker Square",
+                "url": "https://gshrealestate.com/portfolio/esker-square/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/esker-110723-38-1024x683.jpeg",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Holt, MI 48842",
+                "lat": 42.6365611,
+                "lon": -84.5225315,
+                "zip_code": "48842"
+            },
+            {
+                "title": "Edge at Oakland",
+                "url": "https://gshrealestate.com/portfolio/edge-at-oakland/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/edge.png",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Auburn, MI 48326",
+                "lat": 42.6845778,
+                "lon": -83.2206041,
+                "zip_code": "48326"
+            },
+            {
+                "title": "Hunter’s Ridge",
+                "url": "https://gshrealestate.com/portfolio/hunters-ridge/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/1.-Hunters-Pool_New-pool-furniture_Q3-1024x683.jpeg",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Farmington Hills, MI 48334",
+                "lat": 42.5241517,
+                "lon": -83.3651437,
+                "zip_code": "48334"
+            },
+            {
+                "title": "Meadows at Farmington",
+                "url": "https://gshrealestate.com/portfolio/meadows-at-farmington/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Retreat-Playground.jpeg",
+                "description": "The Meadows at Farmington Hills is a beautiful multifamily community consisting of 424 apartments. Get more details on this piece of multi-family real estate.",
+                "address": "Farmington Hills, MI 48331",
+                "lat": 42.5138874,
+                "lon": -83.3809978,
+                "zip_code": "48331"
+            },
+            {
+                "title": "Ridgeline at Canton",
+                "url": "https://gshrealestate.com/portfolio/ridgeline-at-canton/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Canton-Pool-w_-skys.jpeg",
+                "description": "The Meadows at Canton is a 736-unit apartment community in Canton, Michigan. Get the details on this multi-family real estate investing opportunity.",
+                "address": "Canton, MI 39046",
+                "lat": 32.612602,
+                "lon": -90.0367512,
+                "zip_code": "39046"
+            },
+            {
+                "title": "Meadows at Capitol Heights",
+                "url": "https://gshrealestate.com/portfolio/meadows-at-capitol-heights/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/11/Screen-Shot-2021-12-02-at-3.41.40-PM.png",
+                "description": "The Meadows at Capitol Heights is a 272-unit apartment community at 5284 Marlboro Pike, Capitol Heights, Maryland. Get details on this investment property.",
+                "address": "5284 Marlboro Pike, Capitol Heights, Maryland 20743",
+                "lat": 38.8735393,
+                "lon": -76.9313062,
+                "zip_code": "20743"
+            },
+            {
+                "title": "Sherwood Oaks",
+                "url": "https://gshrealestate.com/portfolio/sherwood-oaks/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/11/Screen-Shot-2021-11-09-at-11.43.23-AM.png",
+                "description": "Sherwood Oaks is a 199-unit apartment community in Riverview, Florida. Get the details on this multi-family real estate investing opportunity.",
+                "address": "Riverview, FL 33568",
+                "lat": 27.871197,
+                "lon": -82.3269883,
+                "zip_code": "33568"
+            },
+            {
+                "title": "The Preserve at Spring Lake",
+                "url": "https://gshrealestate.com/portfolio/the-preserve-at-spring-lake/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Preserve-sunset-ext-1024x683.jpeg",
+                "description": "The Preserve at Spring Lake is a 320-unit apartment community in Altamonte Springs, FL. Get more details on this investment property.",
+                "address": "Altamonte Springs, FL 32701",
+                "lat": 28.6619154,
+                "lon": -81.3885899,
+                "zip_code": "32701"
+            },
+            {
+                "title": "The Orion",
+                "url": "https://gshrealestate.com/portfolio/the-orion-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/09/Screen-Shot-2022-09-14-at-11.10.56-AM.png",
+                "description": "The Orion is a 200-unit apartment community in Orion Township, MI that we acquired in Q1 2021. Get more details on this investment property.",
+                "address": "Orion Township, MI 48359",
+                "lat": 42.7352233,
+                "lon": -83.2855622,
+                "zip_code": "48359"
+            },
+            {
+                "title": "Laurel Pines",
+                "url": "https://gshrealestate.com/portfolio/laurel-pines-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Screen-Shot-2021-04-28-at-1.31.36-PM.png",
+                "description": "Laurel Pines is a 235-unit apartment community consisting of 7 three-story buildings in Laurel, Maryland. Laurel is a suburb of Washington DC located in",
+                "address": "Laurel, MD 20724",
+                "lat": 39.0999412,
+                "lon": -76.8123751,
+                "zip_code": "20724"
+            },
+            {
+                "title": "The Landings on East Hill",
+                "url": "https://gshrealestate.com/portfolio/the-landings-on-east-hill-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Landings-Pool-NM-Edit-1024x683.jpeg",
+                "description": "The Landings on East Hill is a 148-unit apartment community in Grand Blanc Township, MI. Get more details on this investment property.",
+                "address": "Grand Blanc, MI 48439",
+                "lat": 42.9275277,
+                "lon": -83.6299518,
+                "zip_code": "48439"
+            },
+            {
+                "title": "BLVD West",
+                "url": "https://gshrealestate.com/portfolio/blvd-west-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Blvd-West-Pool-Edit-NM-1-1024x683.jpeg",
+                "description": "BLVD West is a 144-unit apartment community in Lansing, MI that we acquired in Q1 2021. Get more details on this investment property.",
+                "address": "Lansing, MI 48911",
+                "lat": 42.6630556,
+                "lon": -84.5688634,
+                "zip_code": "48911"
+            },
+            {
+                "title": "Veridian Castleton",
+                "url": "https://gshrealestate.com/portfolio/veridian-castleton-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/veridian-1-1024x529.png",
+                "description": "Veridian Castleton is a 398-unit apartment community in Indianapolis, IN that we acquired in Q1 2021. Get more details on this investment property.",
+                "address": "Indianapolis, IN 46204",
+                "lat": 39.7683331,
+                "lon": -86.1583502,
+                "zip_code": "46204"
+            },
+            {
+                "title": "Colony Club",
+                "url": "https://gshrealestate.com/portfolio/colony-club-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Colony-Club-Pool-Sunset-1024x576.jpeg",
+                "description": "Colony Club is a 588-unit apartment and townhome community in Bedford, Ohio that we acquired in Q2 2019. Get more details on this investment property.",
+                "address": "Bedford, OH 44146",
+                "lat": 41.39311,
+                "lon": -81.536509,
+                "zip_code": "44146"
+            },
+            {
+                "title": "The Loop",
+                "url": "https://gshrealestate.com/portfolio/the-loop-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2022/08/Loop-28.jpeg",
+                "description": "The Loop on Greenfield is an 89-building apartment community in Oak Park, MI that we acquired in Q4 2019. Get more details on this investment property.",
+                "address": "Oak Park, MI 48237",
+                "lat": 42.4784945,
+                "lon": -83.1987151,
+                "zip_code": "48237"
+            },
+            {
+                "title": "West Detroit",
+                "url": "https://gshrealestate.com/portfolio/west-detroit-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2020/07/Detroit-J-Couzens-050319-6-Edit.jpg",
+                "description": "West Detroit Portfolio comprises three small apartment communities in various west side Detroit neighborhoods. Learn more about these investment properties.",
+                "address": "Detroit, MI 48239",
+                "lat": 42.3463099,
+                "lon": -83.2597947,
+                "zip_code": "48239"
+            },
+            {
+                "title": "Glengarry Park",
+                "url": "https://gshrealestate.com/portfolio/glengarry-park-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/GSH-Sold-Template-940-×-788-px-1.png",
+                "description": "Glengarry Park is a 300-unit apartment community in Waterford, MI that we acquired in Q4 2019. Get more details on this investment property.",
+                "address": "Waterford, MI 48329",
+                "lat": 42.7022527,
+                "lon": -83.402718,
+                "zip_code": "48329"
+            },
+            {
+                "title": "Foote Hills",
+                "url": "https://gshrealestate.com/portfolio/foote-hills-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/GSH-Sold-Template-940-×-788-px.png",
+                "description": "Foote Hills is a 182-unit apartment community in Kentwood, MI that we acquired in Q1 2019. Get more details on this investment property.",
+                "address": "Kentwood, MI 49508",
+                "lat": 42.8694731,
+                "lon": -85.6447492,
+                "zip_code": "49508"
+            },
+            {
+                "title": "The Meadows on Cherry Hill",
+                "url": "https://gshrealestate.com/portfolio/the-meadows-on-cherry-hill/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/GSH-Property-.png",
+                "description": "The Meadows on Cherry Hill is a 173-unit apartment community in Westland, MI that we acquired in Q3 2018. Get more details on this investment property.",
+                "address": "Westland, MI 48186",
+                "lat": 42.3092078,
+                "lon": -83.3607774,
+                "zip_code": "48186"
+            },
+            {
+                "title": "The Meadows on Ten",
+                "url": "https://gshrealestate.com/portfolio/the-meadows-on-ten/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/GSH-Sold-Property.png",
+                "description": "The Meadows on Ten is a 342-unit apartment community in Warren, MI that we acquired in Q4 2018. Get more details on this investment property.",
+                "address": "Warren, MI 48093",
+                "lat": 42.4932575,
+                "lon": -83.0062746,
+                "zip_code": "48093"
+            },
+            {
+                "title": "Holiday Gardens",
+                "url": "https://gshrealestate.com/portfolio/holiday-gardens-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Navy-Modern-Real-Estate-Agency-Facebook-Post-12.png",
+                "description": "Holiday Gardens is a 64-unit apartment community in Mt Clemens, MI that we acquired in Q1 2017. Get more details on this investment property.",
+                "address": "Mt Clemmons, MI 48111",
+                "lat": 42.1442496,
+                "lon": -83.4772494,
+                "zip_code": "48111"
+            },
+            {
+                "title": "Chapel Oaks",
+                "url": "https://gshrealestate.com/portfolio/chapel-oaks/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Navy-Modern-Real-Estate-Agency-Facebook-Post-14.png",
+                "description": "Chapel Oaks is a 320-unit apartment community in Fort Wayne, Indiana that we sold in Q1 2021. Get more details on this investment property.",
+                "address": "Fort Wayne, IN 46802",
+                "lat": 41.0799898,
+                "lon": -85.1386015,
+                "zip_code": "46802"
+            },
+            {
+                "title": "The Meadows on Michigan Ave",
+                "url": "https://gshrealestate.com/portfolio/the-meadows-on-michigan-ave/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Navy-Modern-Real-Estate-Agency-Facebook-Post-11.png",
+                "description": "The Meadows on Michigan Ave is an 80-unit apartment community in Marshall, MI that we acquired in Q3 2019. Get more details on this investment property.",
+                "address": "Marshall, MI 49068",
+                "lat": 42.2721367,
+                "lon": -84.9642008,
+                "zip_code": "49068"
+            },
+            {
+                "title": "The Meadows on Thirteen",
+                "url": "https://gshrealestate.com/portfolio/the-meadows-on-thirteen/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Navy-Modern-Real-Estate-Agency-Facebook-Post-13.png",
+                "description": "The Meadows on Thirteen is a 266-unit apartment community in Roseville, MI that we acquired in Q1 2018. Get more details on this investment property.",
+                "address": "Roseville, MI 48066",
+                "lat": 42.5224147,
+                "lon": -82.9423324,
+                "zip_code": "48066"
+            },
+            {
+                "title": "Barwin Place",
+                "url": "https://gshrealestate.com/portfolio/barwin-place-2/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2021/04/Navy-Modern-Real-Estate-Agency-Facebook-Post-15.png",
+                "description": "Barwin Place is a small property on the west side of downtown Mt Clemens, MI that we acquired in Q3 2018. Get more details on this investment property.",
+                "address": "Mt. Clemens, MI 48043",
+                "lat": 42.5972563,
+                "lon": -82.8779754,
+                "zip_code": "48043"
+            },
+            {
+                "title": "The Meadows on Balfour",
+                "url": "https://gshrealestate.com/portfolio/the-meadows-on-balfour/",
+                "image": "https://gshrealestate.com/wp-content/uploads/2019/02/Navy-Modern-Real-Estate-Agency-Facebook-Post-16.png",
+                "description": "The Meadows at Balfour is a 408-unit apartment community in Harper Woods, MI that we sold in Q1 2021. Get more details on this investment property.",
+                "address": "Harper Woods, MI 48225",
+                "lat": 42.4333367,
+                "lon": -82.9238847,
+                "zip_code": "48225"
+            }
+        ];
+
+        // Calculate Totals
+        let totalUnits = 0;
+        properties.forEach(prop => {
+            const desc = prop.description || "";
+            // Try to match specific patterns for unit counts
+            // e.g. "424-unit", "consisting of 424 apartments", "is a 272-unit"
+            const unitMatch = desc.match(/(\d+)-unit/) ||
+                desc.match(/consisting of (\d+) apartments/) ||
+                desc.match(/is an (\d+)-building/); // Heuristic for edge cases like "89-building"
+
+            if (unitMatch) {
+                totalUnits += parseInt(unitMatch[1].replace(/,/g, ''));
+            }
+        });
+
+        document.getElementById('prop-count').textContent = properties.length;
+        document.getElementById('unit-count').textContent = totalUnits.toLocaleString();
+
+        // Initialize Map
+        // Start with a view centered on Michigan roughly
+        const map = L.map('map').setView([42.3314, -83.0458], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const bounds = [];
+
+        properties.forEach(prop => {
+            if (prop.lat && prop.lon) {
+                const marker = L.marker([prop.lat, prop.lon]).addTo(map);
+
+                // Generate Google Street View URL
+                const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${prop.lat},${prop.lon}`;
+
+                // Add zip code to address display if available (already appended in JSON script, but safe to check)
+                const displayAddress = prop.address.includes(prop.zip_code) ? prop.address : (prop.address + " " + (prop.zip_code || ""));
+
+                const popupContent = `
+                <div class="popup-content">
+                    <h3>${prop.title}</h3>
+                    <img src="${prop.image || 'https://via.placeholder.com/200x150'}" alt="${prop.title}">
+                    <p><b>Address:</b> ${displayAddress}</p>
+                    <p>${prop.description || ''}</p>
+                    <p>
+                        <a href="${prop.url}" target="_blank">View Details</a> | 
+                        <a href="${streetViewUrl}" target="_blank">Street View</a>
+                    </p>
+                </div>
+            `;
+
+                marker.bindPopup(popupContent);
+
+                // Hover Tooltip as requested
+                marker.bindTooltip(popupContent, {
+                    direction: 'top',
+                    sticky: true
+                });
+
+                // Click to open popup is default behavior, no extra listener needed
+
+                bounds.push([prop.lat, prop.lon]);
+            }
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds);
+        }
+    </script>
+
+</body>
+
+</html>
